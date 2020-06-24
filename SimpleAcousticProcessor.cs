@@ -10,7 +10,7 @@ using NAudio.Wave;
 
 namespace psiDeepSpeech
 {
-    public class SimpleAcousticProcessor : ConsumerProducer<AudioBuffer, AudioBuffer>
+    class SimpleAcousticProcessor : ConsumerProducer<AudioBuffer, AudioBuffer>
     {
         private int byteRate = 16000 * 16 / 8;
 

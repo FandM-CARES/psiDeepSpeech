@@ -8,13 +8,28 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>psiDeepSpeech</RootNamespace>
     <AssemblyName>psiDeepSpeech</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -56,6 +71,15 @@
     <Reference Include="Microsoft.Psi.IL, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Psi.Runtime.0.11.82.2-beta\lib\netstandard2.0\Microsoft.Psi.IL.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Psi.Language, Version=0.11.82.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Psi.Language.0.11.82.2-beta\lib\netstandard2.0\Microsoft.Psi.Language.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Psi.Speech, Version=0.11.82.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Psi.Speech.0.11.82.2-beta\lib\netstandard2.0\Microsoft.Psi.Speech.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Psi.Speech.Windows, Version=0.11.82.2, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Psi.Speech.Windows.0.11.82.2-beta\lib\net472\Microsoft.Psi.Speech.Windows.dll</HintPath>
+    </Reference>
     <Reference Include="NAudio, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\NAudio.1.10.0\lib\net35\NAudio.dll</HintPath>
     </Reference>
@@ -77,6 +101,7 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
+    <Reference Include="System.Speech" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -87,20 +112,36 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeepSpeechRecognizer.cs" />
+    <Compile Include="DeepSpeechSubRecognizer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleAcousticProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="psiDeepSpeech.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="arctic_a0024.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.7.2 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\DeepSpeech.0.7.0\build\DeepSpeech.targets" Condition="Exists('packages\DeepSpeech.0.7.0\build\DeepSpeech.targets')" />
