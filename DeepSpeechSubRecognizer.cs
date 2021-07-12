@@ -14,14 +14,14 @@ using DeepSpeechClient.Interfaces;
 using DeepSpeechClient.Models;
 using NAudio.Wave;
 
+using Newtonsoft.Json;
+
 namespace psiDeepSpeech
 {
     public class DeepSpeechSubRecognizer : ConsumerProducer<(AudioBuffer,bool), String>, IDisposable
     {
 
         private IDeepSpeech dsclient;
-
-        private string modelFileName = "output_graph.pbmm";
 
         /// <summary>
         /// Stream used to feed data into the acoustic model.
@@ -41,16 +41,38 @@ namespace psiDeepSpeech
         /// <summary>
         /// SubRecognizer that requires a signal for when speech is present.
         /// </summary>
-        public DeepSpeechSubRecognizer(Pipeline pipeline) : base(pipeline)
+        public DeepSpeechSubRecognizer(Pipeline pipeline) : this(pipeline, new DeepSpeechConfiguration())
         {
+        }
+
+        public DeepSpeechSubRecognizer(Pipeline pipeline, DeepSpeechConfiguration config) : base(pipeline)
+        {
+            string modelFileName = config.modelFileName;
+            string scorerFileName = config.scorerFileName;
+
             if (File.Exists(modelFileName))
             {
                 dsclient = new DeepSpeech(modelFileName);
+
+                if (scorerFileName.Length > 0)
+                {
+                    if (File.Exists(scorerFileName))
+                    {
+                        dsclient.EnableExternalScorer(scorerFileName);
+                    } 
+                    else
+                    {
+                        Console.WriteLine("WARNING: Scorer file " + scorerFileName + " not found");
+                    }
+                }
+
+                setBeamWidth(config.beamWidth);
+
+                loadHotWords(config.hotwordsFileName);
+
                 dsstream = dsclient.CreateStream();
 
                 inputStream = new BufferedAudioStream(640 * 31 * 7);
-
-                //AudioVadIn = pipeline.CreateReceiver<(AudioBuffer, bool)>(this, ReceiveWithVad, nameof(this.AudioVadIn));
 
                 IsBuffering = pipeline.CreateEmitter<bool>(this, nameof(this.IsBuffering));
             }
@@ -58,11 +80,8 @@ namespace psiDeepSpeech
             {
                 throw new FileNotFoundException($"Model file {modelFileName} not found.  The model is not included in the DeepSpeech NuGet. Be sure to download the model file at https://github.com/mozilla/DeepSpeech/releases");
             }
-
         }
-
-        //public Receiver<(AudioBuffer, bool)> AudioVadIn;
-
+        
 
         public void Dispose()
         {
@@ -74,64 +93,6 @@ namespace psiDeepSpeech
         }
 
         public Emitter<bool> IsBuffering { get; private set; }
-
-
-        //protected override void Receive((AudioBuffer,double) data, Envelope e)
-        //{
-        //    //inputStream.Write(audio.Data, 0, audio.Length);
-        //    var audio = data.Item1;
-        //    var db = data.Item2;
-        //    var waveBuffer = new WaveBuffer(audio.Data);
-        //    if (db > 40)
-        //    {
-        //        if (!buffering)
-        //        {
-        //            buffering = true;
-        //            dsstream = dsclient.CreateStream();
-        //            for (int i = 0; i < 5; i++)
-        //            {
-        //                if (oldBuffers[i] != null)
-        //                {
-        //                    dsclient.FeedAudioContent(dsstream, oldBuffers[i], Convert.ToUInt32(oldBuffers[i].Length));
-        //                }
-        //            }
-        //        }
-        //        lowCount = 0;
-        //        dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
-                
-        //    }
-        //    else
-        //    {
-        //        if (buffering)
-        //        {
-        //            lowCount += 1;
-        //            if (lowCount > 5)
-        //            {
-        //                Console.Write('*');
-        //                dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
-        //                var text = dsclient.FinishStream(dsstream);
-        //                if (text.Length > 0)
-        //                    Out.Post(text, e.OriginatingTime);
-        //                //dsstream = dsclient.CreateStream();
-        //                buffering = false;
-        //            }
-        //        }
-        //        else
-        //        {
-                    
-        //        }
-        //    }
-
-        //    for (int i = 0; i < 4; i++)
-        //    {
-        //        //Array.Copy(oldBuffers[i + 1], oldBuffers[i], oldBuffers[i + 1].Length);
-        //        oldBuffers[i] = oldBuffers[i + 1];
-        //    }
-        //    oldBuffers[4] = new short[waveBuffer.MaxSize / 2];
-        //    Array.Copy(waveBuffer.ShortBuffer, oldBuffers[4], waveBuffer.MaxSize / 2);
-
-        //    IsBuffering.Post(buffering, e.OriginatingTime);
-        //}
 
         private DateTime lastAudioContainingSpeechTime;
         private DateTime lastAudioOriginatingTime = DateTime.MinValue;
@@ -187,8 +148,8 @@ namespace psiDeepSpeech
                     //Array.Copy(oldBuffers[i + 1], oldBuffers[i], oldBuffers[i + 1].Length);
                     oldBuffers[i] = oldBuffers[i + 1];
                 }
-                oldBuffers[4] = new short[waveBuffer.MaxSize / 2];
-                Array.Copy(waveBuffer.ShortBuffer, oldBuffers[4], waveBuffer.MaxSize / 2);
+                oldBuffers[19] = new short[waveBuffer.MaxSize / 2];
+                Array.Copy(waveBuffer.ShortBuffer, oldBuffers[19], waveBuffer.MaxSize / 2);
             }
 
             // If this is the last audio packet containing speech
@@ -204,7 +165,20 @@ namespace psiDeepSpeech
 
                 //Console.Write('*');
                 dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
-                var text = dsclient.FinishStream(dsstream);
+                //var text = dsclient.FinishStream(dsstream);
+                var metadata = dsclient.FinishStreamWithMetadata(dsstream, 3);
+                var text = "";
+                var count = 0;
+                foreach (var tran in metadata.Transcripts)
+                {
+                    text = text + count + ": ";
+                    foreach (var token in tran.Tokens)
+                    {
+                        text = text + token.Text;
+                    }
+                    text = text + "(" + tran.Confidence + ") :: ";
+                    count++;
+                }
                 if (text.Length > 0) Out.Post(text, e.OriginatingTime);
                 
             }
@@ -220,13 +194,40 @@ namespace psiDeepSpeech
         public Receiver<bool> DoneIn;
 
 
+        private void setBeamWidth(uint bw)
+        {
+            if (bw > 0)
+            {
+                var beamWidth = dsclient.GetModelBeamWidth();
+                Console.WriteLine("Beam width was " + beamWidth);
+                dsclient.SetModelBeamWidth(bw);
+                Console.WriteLine("Beam width now is " + bw);
+            }
+        }
+
+        private void loadHotWords(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                using (StreamReader r = new StreamReader(filename))
+                {
+                    string json = r.ReadToEnd();
+                    Dictionary<string, float> items = JsonConvert.DeserializeObject<Dictionary<string, float>>(json);
+                    foreach (var entry in items)
+                    {
+                        dsclient.AddHotWord(entry.Key, entry.Value);
+                    }
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
             using (Pipeline pipeline = Pipeline.Create())
             {
-                var store = Store.Create(pipeline, "deepSpeechTest", ".\\recordings");
+                var store = PsiStore.Create(pipeline, "deepSpeechTest", ".\\recordings");
                 //var storeIn = Store.Open(pipeline, "deepSpeechTest", ".\\recordings\\deepSpeechTest.0000");
-                var storeIn = Store.Open(pipeline, "psiAssist", "\\linux\\repos\\psiAssistiveAgent\\Main\\data\\DataStores\\samples");
+                var storeIn = PsiStore.Open(pipeline, "psiAssist", "\\linux\\repos\\psiAssistiveAgent\\Main\\data\\DataStores\\samples");
                 
                 var replay = false;
                 IProducer<AudioBuffer> audioSource;
@@ -241,7 +242,7 @@ namespace psiDeepSpeech
                         pipeline,
                         new AudioCaptureConfiguration()
                         {
-                            OutputFormat = Microsoft.Psi.Audio.WaveFormat.Create16kHz1Channel16BitPcm(),
+                            Format = Microsoft.Psi.Audio.WaveFormat.Create16kHz1Channel16BitPcm(),
                             DropOutOfOrderPackets = true
                         }
                         );

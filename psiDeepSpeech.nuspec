@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>psiDeepSpeech</id>
-    <version>0.0.1-alpha</version>
+    <version>0.0.2-alpha</version>
     <authors>Willie Wilson</authors>
     <owners>Willie Wilson</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <description>\\psi Component for Deep Speech</description>
-    <copyright>Copyright 2020</copyright>
+    <copyright>Copyright 2021</copyright>
     <tags>psi DeepSpeech</tags>
   </metadata>
 </package>

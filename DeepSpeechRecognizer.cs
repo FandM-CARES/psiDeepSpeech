@@ -31,10 +31,10 @@ namespace psiDeepSpeech
             // voice activity detector
             var voiceDet = new SystemVoiceActivityDetector(this);
             this.audioIn.Out.PipeTo(voiceDet);
-            this.audioIn.Do(x =>
-            {
-                Console.Write('.');
-            });
+            //this.audioIn.Do(x =>
+            //{
+            //    Console.Write('.');
+            //});
             var voiceAudio = this.audioIn.Out.Join(voiceDet.Out, Reproducible.Nearest<bool>(RelativeTimeInterval.Future()));
 
             voiceAudio.PipeTo(recognizer.In);
@@ -57,14 +57,14 @@ namespace psiDeepSpeech
             {
                 //var store = Store.Create(pipeline, "deepSpeechTest", ".\\recordings");
                 //var storeIn = Store.Open(pipeline, "deepSpeechTest", ".\\recordings\\deepSpeechTest.0000");
-                //var storeIn = Store.Open(pipeline, "psiAssist", "\\linux\\repos\\psiAssistiveAgent\\Main\\data\\DataStores\\samples");
+                var storeIn = PsiStore.Open(pipeline, "mmr", "\\Users\\wwilson\\source\\repos\\MultimodalRecorder\\data\\DataStores");
 
-                var replay = false;
+                var replay = true;
                 IProducer<AudioBuffer> audioSource;
                 if (replay)
                 {
-                    //audioSource = storeIn.OpenStream<AudioBuffer>("AudioIn");
-                    audioSource = null;
+                    audioSource = storeIn.OpenStream<AudioBuffer>("AudioIn");
+                    //audioSource = null;
                 }
                 else
                 {
@@ -72,7 +72,7 @@ namespace psiDeepSpeech
                         pipeline,
                         new AudioCaptureConfiguration()
                         {
-                            OutputFormat = Microsoft.Psi.Audio.WaveFormat.Create16kHz1Channel16BitPcm(),
+                            Format = Microsoft.Psi.Audio.WaveFormat.Create16kHz1Channel16BitPcm(),
                             DropOutOfOrderPackets = true
                         }
                         );
