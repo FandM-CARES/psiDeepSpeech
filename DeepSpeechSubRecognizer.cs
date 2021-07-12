@@ -165,20 +165,21 @@ namespace psiDeepSpeech
 
                 //Console.Write('*');
                 dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
-                //var text = dsclient.FinishStream(dsstream);
-                var metadata = dsclient.FinishStreamWithMetadata(dsstream, 3);
-                var text = "";
-                var count = 0;
-                foreach (var tran in metadata.Transcripts)
-                {
-                    text = text + count + ": ";
-                    foreach (var token in tran.Tokens)
-                    {
-                        text = text + token.Text;
-                    }
-                    text = text + "(" + tran.Confidence + ") :: ";
-                    count++;
-                }
+                var text = dsclient.FinishStream(dsstream);
+                // Debug code below
+                //var metadata = dsclient.FinishStreamWithMetadata(dsstream, 3);
+                //var text = "";
+                //var count = 0;
+                //foreach (var tran in metadata.Transcripts)
+                //{
+                //    text = text + count + ": ";
+                //    foreach (var token in tran.Tokens)
+                //    {
+                //        text = text + token.Text;
+                //    }
+                //    text = text + "(" + tran.Confidence + ") :: ";
+                //    count++;
+                //}
                 if (text.Length > 0) Out.Post(text, e.OriginatingTime);
                 
             }
