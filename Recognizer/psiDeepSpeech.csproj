@@ -1,0 +1,125 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows10.0.17763.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+	  <Version>0.1.0-beta</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>psiDeepSpeech.DeepSpeechRecognizer</StartupObject>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>Willie Wilson</Authors>
+    <Company>Franklin and Marshall College</Company>
+    <Description>Microsoft \psi wrapper to Mozilla's DeepSpeech.
+Opterates either as a component in a \psi pipeline or a standalone exe</Description>
+    <Copyright>2022</Copyright>
+    <PackageProjectUrl>https://github.com/FandM-CARES/psiDeepSpeech</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FandM-CARES/psiDeepSpeech</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>psi;DeepSpeech;speech recognition;asr</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="..\PushToTalk\**" />
+    <EmbeddedResource Remove="..\PushToTalk\**" />
+    <None Remove="..\PushToTalk\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DeepSpeechClient">
+      <HintPath>..\packages\DeepSpeech.0.9.3\lib\net47\DeepSpeechClient.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Speech" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="hotwords.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="arctic_a0024.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.7.2 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DeepSpeech" Version="0.9.3" />
+    <PackageReference Include="Microsoft.Psi.Audio" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Audio.Windows" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Data" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Language" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Runtime" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Speech" Version="0.17.52.1-beta" />
+    <PackageReference Include="Microsoft.Psi.Speech.Windows" Version="0.17.52.1-beta" />
+    <PackageReference Include="NAudio" Version="2.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Buffers" Version="4.5.1" />
+    <PackageReference Include="System.Collections.Immutable" Version="7.0.0-preview.6.22324.4" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.6.0-preview3.19128.7" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="7.0.0-preview.2.22152.2" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.336902">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="7.0.0-preview.6.22324.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SourceFiles Include="$(SolutionDir)deepspeech-0.9.3-models.pbmm;$(SolutionDir)deepspeech-0.9.3-models.scorer;$(SolutionDir)hotwords.json" />
+    <ModelFiles Include="$(TargetDir)output_graph.pbmm;$(TargetDir)kenlm.scorer;$(TargetDir)hotwords.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PushToTalk\PushToTalk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	  <!-- <Exec Command="echo After Build: $(OutDir)" /> -->
+	  <Exec Command="echo Copying model files to $(TargetDir)" />
+	  <Copy SourceFiles="@(SourceFiles)" DestinationFiles="@(ModelFiles)" />
+  </Target>
+</Project>

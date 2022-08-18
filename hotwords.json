@@ -1,9 +1,12 @@
 {
-    "before": 1.5,
-    "mug": 7.5,
-    "travel": 5.5,
-    "awesome": 2.4,
-    "piece": 1.5,
-    "nice":  1.5
+  "before": 1.5,
+  "mug": 7.5,
+  "travel": 5.5,
+  "awesome": 2.4,
+  "piece": 1.5,
+  "nice": 1.5,
+  "head": 1.5,
+  "talon": 1.5,
+  "tail":  1.5
 
 }

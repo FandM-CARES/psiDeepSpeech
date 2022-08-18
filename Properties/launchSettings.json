@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "psiDeepSpeech": {
+      "commandName": "Project",
+      "commandLineArgs": "-p -r mmr Z:\\\\legos\\\\mmr.0002"
+    }
+  }
+}

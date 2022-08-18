@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "psiDeepSpeech": {
+      "commandName": "Project",
+      "commandLineArgs": "-r mmr Z:\\\\legos\\\\mmr.0002 AudioIn -v -s psiDeepSpeech testing"
+    }
+  }
+}

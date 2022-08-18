@@ -38,6 +38,7 @@ namespace psiDeepSpeech
 
         private int lowCount = 0;
 
+
         /// <summary>
         /// SubRecognizer that requires a signal for when speech is present.
         /// </summary>
@@ -80,6 +81,8 @@ namespace psiDeepSpeech
             {
                 throw new FileNotFoundException($"Model file {modelFileName} not found.  The model is not included in the DeepSpeech NuGet. Be sure to download the model file at https://github.com/mozilla/DeepSpeech/releases");
             }
+
+            debuggingStates = config.verbose;
         }
         
 
@@ -96,8 +99,13 @@ namespace psiDeepSpeech
 
         private DateTime lastAudioContainingSpeechTime;
         private DateTime lastAudioOriginatingTime = DateTime.MinValue;
-        private bool lastAudioContainedSpeech = false;
+        private bool prevAudioContainedSpeech = false;
+        private bool prevPrevAudioContainedSpeech = false;
+        private int cntSinceSpeech;
 
+        private int ADD_BUFFERS_CNT = 50;
+
+        private bool debuggingStates = false;
 
         protected override void Receive((AudioBuffer, bool) data, Envelope e)
         {
@@ -114,78 +122,121 @@ namespace psiDeepSpeech
             var previousAudioOriginatingTime = this.lastAudioOriginatingTime;
             this.lastAudioOriginatingTime = e.OriginatingTime;
 
+            // 6 possible states
+            // 1. current has speech, prev did not, prev prev (recent) did not -> start new stream
+            // 2. current has speech, prev did not, prev prev did -> just keep adding to stream
+            // 3. current has speech, prev did too -> add to stream
+            // 4. current no speech, prev did -> add one more to stream
+            // 5. current no speech, prev did not, prev prev did -> get content, clear buffer
+            // 6. current no speech, prev did not, prev prev did not -> add to buffer
             if (hasSpeech)
             {
                 buffering = true;
 
-                //Console.Write('.');
-
                 this.lastAudioContainingSpeechTime = e.OriginatingTime;
 
-                if (!this.lastAudioContainedSpeech)
+                 
+                if (this.cntSinceSpeech > 0)
                 {
-                    // setup a new recognition stream
-                    dsstream = dsclient.CreateStream();
-
-                    // load in recent data
-                    for (int i = 0; i < 20; i++)
+                    if (debuggingStates) Console.Write('-');
+                    // // keep adding to stream
+                    if (this.cntSinceSpeech <= ADD_BUFFERS_CNT)
                     {
-                        if (oldBuffers[i] != null)
+                        // do nothing?
+                    }
+                    // new audio segment, start new stream
+                    else
+                    {
+                        if (debuggingStates) Console.Write('>');  // start of stream
+                        // setup a new recognition stream
+                        dsstream = dsclient.CreateStream();
+
+                        // load in recent data
+                        for (int i = 0; i < 20; i++)
                         {
-                            dsclient.FeedAudioContent(dsstream, oldBuffers[i], Convert.ToUInt32(oldBuffers[i].Length));
+                            if (oldBuffers[i] != null)
+                            {
+                                dsclient.FeedAudioContent(dsstream, oldBuffers[i], Convert.ToUInt32(oldBuffers[i].Length));
+                            }
                         }
+                        oldBuffers = new short[20][];
                     }
                 }
+
+                cntSinceSpeech = 0;
+
+                if (debuggingStates) Console.Write('.'); // add to stream
 
                 // feed audio to deep speech
                 dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
             }
             else
             {
-                //Console.Write('x');
-                for (int i = 0; i < 19; i++)
+                
+                // keep adding to stream if recent speech
+                if (this.cntSinceSpeech < ADD_BUFFERS_CNT)
                 {
-                    //Array.Copy(oldBuffers[i + 1], oldBuffers[i], oldBuffers[i + 1].Length);
-                    oldBuffers[i] = oldBuffers[i + 1];
+                    if (debuggingStates) Console.Write('*');  // a few extras at the end (or in the middle)
+                    // feed audio to deep speech
+                    dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
                 }
-                oldBuffers[19] = new short[waveBuffer.MaxSize / 2];
-                Array.Copy(waveBuffer.ShortBuffer, oldBuffers[19], waveBuffer.MaxSize / 2);
-            }
+                else
+                {
+                    // we've reached the end of the speech segment and time to get the text
+                    if (this.cntSinceSpeech == ADD_BUFFERS_CNT)
+                    {
+                        if (debuggingStates) Console.WriteLine("<-"); // end of stream
+                        // buffer one more?
+                        //dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
 
-            // If this is the last audio packet containing speech
-            if (!hasSpeech && this.lastAudioContainedSpeech)
-            {
-                // done buffering
-                buffering = false;
+                        // done buffering
+                        buffering = false;
 
-                // If this is the first audio packet containing no speech, use the time of the previous audio packet
-                // as the end of the actual speech, since that is the last packet that contained any speech.
-                var lastVADSpeechEndTime = this.lastAudioContainingSpeechTime;
+                        // If this is the first audio packet containing no speech, use the time of the previous audio packet
+                        // as the end of the actual speech, since that is the last packet that might have contained any speech.
+                        var lastVADSpeechEndTime = this.lastAudioContainingSpeechTime;
 
+                        dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
+                        var text = dsclient.FinishStream(dsstream);
 
-                //Console.Write('*');
-                dsclient.FeedAudioContent(dsstream, waveBuffer.ShortBuffer, Convert.ToUInt32(waveBuffer.MaxSize / 2));
-                var text = dsclient.FinishStream(dsstream);
-                // Debug code below
-                //var metadata = dsclient.FinishStreamWithMetadata(dsstream, 3);
-                //var text = "";
-                //var count = 0;
-                //foreach (var tran in metadata.Transcripts)
-                //{
-                //    text = text + count + ": ";
-                //    foreach (var token in tran.Tokens)
-                //    {
-                //        text = text + token.Text;
-                //    }
-                //    text = text + "(" + tran.Confidence + ") :: ";
-                //    count++;
-                //}
-                if (text.Length > 0) Out.Post(text, e.OriginatingTime);
+                        // Debug code below
+                        //var metadata = dsclient.FinishStreamWithMetadata(dsstream, 3);
+                        //var text = "";
+                        //var count = 0;
+                        //foreach (var tran in metadata.Transcripts)
+                        //{
+                        //    text = text + count + ": ";
+                        //    foreach (var token in tran.Tokens)
+                        //    {
+                        //        text = text + token.Text;
+                        //    }
+                        //    text = text + "(" + tran.Confidence + ") :: ";
+                        //    count++;
+                        //}
+
+                        // output the text, if there is some
+                        if (text.Length > 0) Out.Post(text, e.OriginatingTime);
+
+                    }
+                    // just buffer
+                    else
+                    {
+                        for (int i = 0; i < 19; i++)
+                        {
+                            //Array.Copy(oldBuffers[i + 1], oldBuffers[i], oldBuffers[i + 1].Length);
+                            oldBuffers[i] = oldBuffers[i + 1];
+                        }
+                        oldBuffers[19] = new short[waveBuffer.MaxSize / 2];
+                        Array.Copy(waveBuffer.ShortBuffer, oldBuffers[19], waveBuffer.MaxSize / 2);
+                    }
+                }
+                this.cntSinceSpeech++;
                 
             }
 
             // Remember last audio state.
-            this.lastAudioContainedSpeech = hasSpeech;
+            this.prevPrevAudioContainedSpeech = this.prevAudioContainedSpeech;
+            this.prevAudioContainedSpeech = hasSpeech;
 
             // Update on whether audio is being processed/buffering
             IsBuffering.Post(buffering, e.OriginatingTime);
